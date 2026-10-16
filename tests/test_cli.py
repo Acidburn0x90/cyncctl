@@ -53,3 +53,40 @@ def test_select_device_ambiguous_raises():
 def test_select_device_no_match_raises():
     with pytest.raises(cli.DeviceSelectError):
         cli.select_device(DEVICES, "kitchen")
+
+
+def test_login_flow_verifies_credentials_before_2fa(monkeypatch):
+    """App order: /user/version first, then email code, then two_factor
+    sign-in (SignInUseCase + TwoFactorViewModel)."""
+    calls = []
+    monkeypatch.setattr(cli.getpass, "getpass", lambda prompt: "pw")
+    monkeypatch.setattr("builtins.input", lambda prompt="": "123456")
+    monkeypatch.setattr(
+        cli.api, "verify_credentials",
+        lambda e, p: (calls.append(("verify", e, p)) or {"user_version": 2}))
+    monkeypatch.setattr(cli.api, "request_two_factor",
+                        lambda e: calls.append(("code", e)))
+    monkeypatch.setattr(cli.api, "login_2fa",
+                        lambda e, p, c: (calls.append(("2fa", c))
+                                         or {"access_token": "t"}))
+    monkeypatch.setattr(cli, "_save_json", lambda path, s: calls.append(("save",)))
+    monkeypatch.setattr(cli, "cmd_devices", lambda args: None)
+    cli.cmd_login(cli.argparse.Namespace(email="a@b.c"))
+    assert [c[0] for c in calls] == ["verify", "code", "2fa", "save"]
+    assert calls[0] == ("verify", "a@b.c", "pw")
+
+
+def test_login_flow_plain_when_user_version_zero(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli.getpass, "getpass", lambda prompt: "pw")
+    monkeypatch.setattr(
+        cli.api, "verify_credentials",
+        lambda e, p: (calls.append("verify") or {"user_version": 0}))
+    monkeypatch.setattr(cli.api, "login",
+                        lambda e, p: (calls.append("login") or {"access_token": "t"}))
+    monkeypatch.setattr(cli.api, "request_two_factor",
+                        lambda e: pytest.fail("must not send a 2FA code"))
+    monkeypatch.setattr(cli, "_save_json", lambda path, s: calls.append("save"))
+    monkeypatch.setattr(cli, "cmd_devices", lambda args: None)
+    cli.cmd_login(cli.argparse.Namespace(email="a@b.c"))
+    assert calls == ["verify", "login", "save"]

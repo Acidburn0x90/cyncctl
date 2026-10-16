@@ -110,9 +110,14 @@ def _next_seq():
 def cmd_login(args):
     email = args.email or input("Cync account email: ")
     password = getpass.getpass("Password: ")
-    try:
-        session = api.login(email, password)
-    except api.TwoFactorRequired:
+    creds = api.verify_credentials(email, password)
+    needs_2fa = creds.get("user_version", 0) >= 1
+    if not needs_2fa:
+        try:
+            session = api.login(email, password)
+        except api.TwoFactorRequired:
+            needs_2fa = True
+    if needs_2fa:
         api.request_two_factor(email)
         print("Two-factor code sent to your email.")
         code = input("Code: ").strip()

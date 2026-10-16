@@ -143,3 +143,20 @@ def test_request_two_factor_posts_expected_payload(monkeypatch):
     api.request_two_factor("a@b.c")
     assert seen["path"] == "/two_factor/email/verifycode"
     assert seen["obj"] == {"email": "a@b.c", "local_lang": "en-us", "corp_id": api.CORP_ID}
+
+
+def test_verify_credentials_posts_account_pwd(monkeypatch):
+    """The app verifies the password at /user/version with account/pwd keys
+    before any sign-in attempt (VerifyCredentialsRequest$$serializer)."""
+    seen = {}
+
+    def fake_post(path, obj):
+        seen["path"] = path
+        seen["obj"] = obj
+        return {"user_version": 2}
+
+    monkeypatch.setattr(api, "_post", fake_post)
+    resp = api.verify_credentials("a@b.c", "pw")
+    assert seen["path"] == "/user/version"
+    assert seen["obj"] == {"account": "a@b.c", "pwd": "pw", "corp_id": api.CORP_ID}
+    assert resp == {"user_version": 2}

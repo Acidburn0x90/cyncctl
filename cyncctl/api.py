@@ -68,6 +68,16 @@ def _post(path, obj):
         raise ApiError(f"{path}: bad JSON: {e}") from None
 
 
+def verify_credentials(email, password):
+    """App's first login step: confirm the password and learn user_version.
+
+    Keys are `account`/`pwd` (VerifyCredentialsRequest$$serializer).
+    user_version >= 1 means the account signs in via /user_auth/two_factor.
+    """
+    return _post("/user/version",
+                 {"account": email, "pwd": password, "corp_id": CORP_ID})
+
+
 def login(email, password):
     return _post("/user_auth",
                  {"email": email, "password": password, "corp_id": CORP_ID})
@@ -87,7 +97,8 @@ def login_2fa(email, password, code):
 
 def get_homes(session):
     return _urlopen_json(
-        f"{API_BASE}/user/{session['user_id']}/subscribe/devices",
+        # ?version=0 exactly as Cloud.java:93 builds it in the app
+        f"{API_BASE}/user/{session['user_id']}/subscribe/devices?version=0",
         headers={"Access-Token": session["access_token"]},
     )
 
