@@ -1,0 +1,4 @@
+#!/bin/sh
+# cyncctl launcher — runs the in-tree package without installation.
+DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PYTHONPATH="$DIR${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m cyncctl "$@"
