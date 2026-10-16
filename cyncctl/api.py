@@ -44,7 +44,12 @@ def _urlopen_json(url, obj=None, headers=None):
         method="POST" if obj is not None else "GET",
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
-        return json.loads(resp.read())
+        body = resp.read()
+    if not body.strip():
+        # status-only endpoints (e.g. /two_factor/email/verifycode)
+        # answer 200 with an empty body
+        return {}
+    return json.loads(body)
 
 
 def _post(path, obj):
