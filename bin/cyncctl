@@ -1,4 +1,6 @@
 #!/bin/sh
 # cyncctl launcher — runs the in-tree package without installation.
-DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+# readlink -f resolves symlinked installs (e.g. ~/.local/bin/cyncctl).
+SELF=$(readlink -f "$0") || exit 1
+DIR=$(CDPATH= cd -- "$(dirname -- "$SELF")/.." && pwd)
 PYTHONPATH="$DIR${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m cyncctl "$@"
