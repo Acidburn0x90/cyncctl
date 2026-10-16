@@ -96,9 +96,11 @@ def login_2fa(email, password, code):
 
 
 def get_homes(session):
+    # No ?version=0 here: live testing showed that query wraps the response
+    # as {"list": [...], "version": 0}, while the bare URL returns the plain
+    # array build_device_map iterates (same records either way).
     return _urlopen_json(
-        # ?version=0 exactly as Cloud.java:93 builds it in the app
-        f"{API_BASE}/user/{session['user_id']}/subscribe/devices?version=0",
+        f"{API_BASE}/user/{session['user_id']}/subscribe/devices",
         headers={"Access-Token": session["access_token"]},
     )
 

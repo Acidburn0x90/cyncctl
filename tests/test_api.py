@@ -160,3 +160,19 @@ def test_verify_credentials_posts_account_pwd(monkeypatch):
     assert seen["path"] == "/user/version"
     assert seen["obj"] == {"account": "a@b.c", "pwd": "pw", "corp_id": api.CORP_ID}
     assert resp == {"user_version": 2}
+
+
+def test_get_homes_url_matches_reference_shape(monkeypatch):
+    """Bare /subscribe/devices returns a plain array (reference-repo shape).
+    Adding ?version=0 — which the app itself uses — makes the server wrap
+    the same records as {"list": [...], "version": 0}, which build_device_map
+    cannot iterate, so the query string must stay off."""
+    seen = {}
+
+    def fake_urlopen_json(url, obj=None, headers=None):
+        seen["url"] = url
+        return []
+
+    monkeypatch.setattr(api, "_urlopen_json", fake_urlopen_json)
+    api.get_homes({"user_id": 42, "access_token": "t"})
+    assert seen["url"] == f"{api.API_BASE}/user/42/subscribe/devices"

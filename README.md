@@ -17,7 +17,9 @@ Two channels, both confirmed present in the shipped APK:
      `user_version == 0` — a bare 400 here is *not* "2FA required")
    - `POST /two_factor/email/verifycode` (request emailed code)
    - `POST /user_auth/two_factor` (complete login, `corp_id=1007d2ad150c4000`)
-   - `GET /user/{id}/subscribe/devices?version=0` (homes; `Access-Token` header)
+   - `GET /user/{id}/subscribe/devices` (homes as a plain array; `Access-Token`
+     header — note: the app's own `?version=0` variant wraps the same records
+     in `{"list": [...], "version": 0}`, so don't send the query string)
    - `GET /product/{pid}/device/{id}/property` (`bulbsArray` with deviceID,
      switchID, mesh index, deviceType)
 2. **Binary TCP protocol** — `cm.gelighting.com:23779` (TLS), fallback
