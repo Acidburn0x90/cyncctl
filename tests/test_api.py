@@ -5,7 +5,9 @@ Network calls are stubbed; the device-map fixture mirrors the real
 /product/{pid}/device/{id}/property.
 """
 
+import io
 import json
+import urllib.error
 
 import pytest
 
@@ -176,3 +178,28 @@ def test_get_homes_url_matches_reference_shape(monkeypatch):
     monkeypatch.setattr(api, "_urlopen_json", fake_urlopen_json)
     api.get_homes({"user_id": 42, "access_token": "t"})
     assert seen["url"] == f"{api.API_BASE}/user/42/subscribe/devices"
+
+
+def test_fetch_device_map_tolerates_missing_home_properties(monkeypatch):
+    """A home without a property record answers 404 (code 4041009, live
+    verified); that is a per-home miss, so fetch_device_map must skip it
+    instead of aborting the whole enumeration."""
+    def fake_urlopen_json(url, obj=None, headers=None):
+        if "/property" in url:
+            raise urllib.error.HTTPError(
+                url, 404, "Not Found", {}, io.BytesIO(b"{}"))
+        return [{"id": 1, "product_id": "p1"}]
+
+    monkeypatch.setattr(api, "_urlopen_json", fake_urlopen_json)
+    result = api.fetch_device_map({"user_id": 1, "access_token": "t"})
+    assert result == ({}, {}, {})
+
+
+def test_capabilities_cover_modern_device_types():
+    """The live account's bulb is deviceType 160 (a modern type outside the
+    original 85-capped reference table); current nikshriv/cync_lights
+    cync_hub.py lines 19-25 include the 128-172 range in every relevant
+    capability set."""
+    for cap in ("ONOFF", "BRIGHTNESS", "COLORTEMP", "RGB", "WIFICONTROL"):
+        assert 160 in api.CAPABILITIES[cap], cap
+    assert 172 in api.CAPABILITIES["PLUG"]

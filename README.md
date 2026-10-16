@@ -15,7 +15,8 @@ Two channels, both confirmed present in the shipped APK:
      `account`/`pwd` keys; returns `user_version`, ≥1 ⇒ two-factor sign-in)
    - `POST /user_auth` (legacy email+password sign-in; only if
      `user_version == 0` — a bare 400 here is *not* "2FA required")
-   - `POST /two_factor/email/verifycode` (request emailed code)
+   - `POST /two_factor/email/verifycode` (request emailed code; codes are
+     single-active — every request supersedes earlier ones, live-verified)
    - `POST /user_auth/two_factor` (complete login, `corp_id=1007d2ad150c4000`)
    - `GET /user/{id}/subscribe/devices` (homes as a plain array; `Access-Token`
      header — note: the app's own `?version=0` variant wraps the same records
